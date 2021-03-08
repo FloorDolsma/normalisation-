@@ -7,25 +7,40 @@ Created on Thu Mar  4 16:14:01 2021
 
 import numpy as np
 import pandas as pd
+from ast import literal_eval
 
-from genomicfeatures_dataframe_with_normalization import dna_features
-   
-dna_df2 = dna_features(region = 3,#['xiii', 0, 14790],
-                 wig_file = r"C:\Users\floor\OneDrive\Documenten\MASTER\MEP\D18524C717111_BDDP200001534-1A_HJVN5DSXY_L1_sample1interleavedsorted_singleend_trimmed.sorted.bam.wig",
-                 pergene_insertions_file = r"C:\Users\floor\OneDrive\Documenten\MASTER\MEP\D18524C717111_BDDP200001534-1A_HJVN5DSXY_L1_sample1interleavedsorted_singleend_trimmed.sorted.bam_pergene_insertions.txt",
-                 variable="reads",
-                 normalization_window_size=20000,
-                 normalize=True,
-                 plotting=True,
-                 savefigure=False,
-                 verbose=True)
+# Import pergene_insertions.txt 
+df = pd.read_csv(r"C:\Users\floor\PycharmProjects\LaanLab-SATAY-DataAnalysis\satay_analysis_testdata\Output_Processing_WT1_KornmannLab\ERR1533147_trimmed.sorted.bam_pergene_insertions.txt", sep = "\t")
+df.columns = ["gene","chromosome", "start bp", "stop bp", "insertions", "reads"]
 
-y = []
-for index, row in dna_df2.iterrows():
-    if row['Feature_type'] != None and 'Gene' in row['Feature_type']:
-     x= [row['Feature_name'], row['Nreadsperinsrt']]
-     y.append(x)
-     
-readsperins=pd.DataFrame(y,columns=['Gene_name','Reads_per_ins'])
+# Convert entire column to a list
+df.loc[:,'insertions'] = df.loc[:,'insertions'].apply(lambda x: literal_eval(x))
+df.loc[:,'reads'] = df.loc[:,'reads'].apply(lambda x: literal_eval(x))
+
+# Compute the average number of reads per insertion for each gene by adding up all the reads in 1 gene
+# and dividing them by the number of insertions
+
+y = [ ]
+for index, row in df.iterrows():
+    if row['insertions'] != []:
+        x = [row['gene'], sum(row['reads'])/len(row['reads'])]
+        y.append(x)
+    else: 
+        x = [row['gene'], 0 ]
+        y.append(x)
+                                         
+gene_readsperins =  pd.DataFrame(y)
+gene_readsperins.columns = ["gene", "reads per insertions"]
+
+del (y, x, index, row)
+
+# compute the average reads per insertions over all the data.
+# so we can compare this number with all the genes
+avrg_reads_per_ins = gene_readsperins["reads per insertions"].sum()/len(gene_readsperins)
+
+# compare to general reads per insertion
+
+
+
 
      
